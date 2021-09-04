@@ -1,0 +1,105 @@
+#!/usr/bin/make -f
+# Set environment variables
+
+# this makefile follows the below conventions for variables denoting files and directories
+# all directory names must end with a terminal '/' character
+# file names never end in terminal '/' character
+
+
+#===================================================
+
+SHELL = /bin/bash
+
+# set this variable to any value to make shared libraries (cleaning existing build files may be necessary)
+SHARED =
+
+#===================================================
+# Compile commands
+#===================================================
+CXX        = g++
+CXXLIBS    =
+CXXFLAGS   = -g -O -Wall
+ifdef SHARED
+CXXFLAGS  += -fpic -fpie
+endif
+INCLUDES =
+ifdef SHARED
+RPATH    =
+endif
+#===================================================
+# Build Directories
+#===================================================
+srcdir     = src/
+buildir    = build/
+#===================================================
+prog_name = main
+#===================================================
+# Source and target objects
+#===================================================
+CXX1SRCS  = $(wildcard $(srcdir)*.cpp)
+CXX2SRCS  = $(wildcard $(srcdir)*.cxx)
+SRCS   = $(CXX1SRCS) $(CXX2SRCS)
+OBJS   = $(patsubst $(srcdir)%.cpp,$(buildir)%.cpp.o,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%.cxx.o,$(CXX2SRCS))
+MKS    = $(patsubst $(srcdir)%.cpp,$(buildir)%cpp.mk,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%cxx.mk,$(CXX2SRCS))
+#=====================================================
+
+build: $(buildir)$(prog_name)
+.PHONY: build
+
+debug:
+	@echo -e "\e[35mBuild Directories \e[0m: $(DIRS)"
+	@echo -e "\e[35mSource Directories\e[0m: $(SRCDIRS)"
+	@echo -e "\e[35mLibdepconf Files  \e[0m: $(LIBCONFS)"
+	@echo -e "\e[35mBuild Files       \e[0m: $(LIBS)"
+	@echo    "#-------------------------------------------#"
+	@echo -e "\e[35mSource Files     \e[0m: $(SRCS)"
+	@echo -e "\e[35mMake Files       \e[0m: $(MKS)"
+	@echo -e "\e[35mObject Files     \e[0m: $(OBJS)"
+	@echo -e "\e[35mmakeflages;makegoals\e[0m:$(MAKEFLAGS) ; $(MAKECMDGOALS)"
+.PHONY:debug
+
+installmode:
+.PHONY:installmode
+
+#=====================================================
+
+ifdef INSTALLMODE
+$(buildir)$(prog_name): $(OBJS) installmode
+else
+$(buildir)$(prog_name): $(OBJS) $(INSTALLSTAMP)
+endif
+ifndef SHARED
+	$(CXX) $(CXXFLAGS) -o $@ $(INCLUDES) $(OBJS) $(CXXLIBS)
+else
+	$(CXX) $(filter-out -pic -fpic -Fpic,$(CXXFLAGS)) -o $@ $(INCLUDES) -Wl,-rpath="$(RPATH)" $(OBJS) $(CXXLIBS)
+endif
+
+$(buildir)%cpp.mk : $(srcdir)%.cpp
+	@mkdir -p $(@D)
+ifndef SHARED
+	@$(CC) -M $< -MQ $(buildir)$*.cpp.o | awk '{ print $$0 } END { printf("\t$(CXX) $(CXXFLAGS) -c -o $(buildir)$*.cpp.o $<\n")}' > $@
+else
+	@$(CC) -M $< -MQ $(buildir)$*.cpp.o | awk '{ print $$0 } END { printf("\t$(CXX) $(filter-out -Fpie -fpie -pie -pic -fpic -Fpic,$(CXXFLAGS)) -c -o $(buildir)$*.cpp.o $<\n")}' > $@
+endif
+	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
+
+$(buildir)%cxx.mk : $(srcdir)%.cxx
+	@mkdir -p $(@D)
+ifndef SHARED
+	@$(CC) -M $< -MQ $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$(CXX) $(CXXFLAGS) -c -o $(buildir)$*.cxx.o $<\n")}' > $@
+else
+	@$(CC) -M $< -MQ $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$(CXX) $(filter-out -Fpie -fpie -pie -pic -fpic -Fpic,$(CXXFLAGS)) -c -o $(buildir)$*.cxx.o $<\n")}' > $@
+endif
+	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
+
+ifneq ($(strip $(filter build $(buildir)$(prog_name) $(OBJS),$(MAKECMDGOALS))),)
+include $(MKS)
+else ifeq ($(MAKECMDGOALS),)
+include $(MKS)
+endif
+
+#=====================================================
+
+clean:
+	rm -f $(buildir)
+.PHONY:clean
