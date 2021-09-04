@@ -62,13 +62,16 @@ override INSTALLSTAMP  = installstamp.txt
 #====================================================
 # Source and target objects
 #====================================================
-CXX1SRCS    = $(wildcard $(srcdir)*/*.cpp)
-CXX2SRCS    = $(wildcard $(srcdir)*/*.cxx)
-SRCS        = $(CXX1SRCS) $(CXX2SRCS)
-DIRS        = $(addprefix $(buildir),$(subst $(srcdir),,$(SRCDIRS)))
-SRCDIRS     = $(sort $(dir $(SRCS)))
-OBJS        = $(patsubst %.cpp,%.cpp.o,$(addprefix $(buildir),$(subst $(srcdir),,$(CXX1SRCS)))) $(patsubst %.cxx,%.cxx.o,$(addprefix $(buildir),$(subst $(srcdir),,$(CXX2SRCS))))
-MKS         = $(patsubst %.cpp,%cpp.mk,$(addprefix $(buildir),$(subst $(srcdir),,$(CXX1SRCS)))) $(patsubst %.cxx,%cxx.mk,$(addprefix $(buildir),$(subst $(srcdir),,$(CXX2SRCS))))
+CXX1SRCS      = $(wildcard $(srcdir)*/*.cpp)
+CXX2SRCS      = $(wildcard $(srcdir)*/*.cxx)
+SRCS          = $(CXX1SRCS) $(CXX2SRCS)
+MAIN_CXX1SRCS = $(wildcard $(srcdir)*.cpp)
+MAIN_CXX2SRCS = $(wildcard $(srcdir)*.cxx)
+MAIN_SRCS     = $(MAIN_CXX1SRCS) $(MAIN_CXX2SRCS)
+DIRS          = $(addprefix $(buildir),$(subst $(srcdir),,$(SRCDIRS)))
+SRCDIRS       = $(sort $(dir $(SRCS)))
+OBJS          = $(patsubst %.cpp,%.cpp.o,$(addprefix $(buildir),$(subst $(srcdir),,$(CXX1SRCS)))) $(patsubst %.cxx,%.cxx.o,$(addprefix $(buildir),$(subst $(srcdir),,$(CXX2SRCS))))
+MKS           = $(patsubst %.cpp,%cpp.mk,$(addprefix $(buildir),$(subst $(srcdir),,$(CXX1SRCS)))) $(patsubst %.cxx,%cxx.mk,$(addprefix $(buildir),$(subst $(srcdir),,$(CXX2SRCS))))
 ifndef SHARED
 LIBS      = $(addprefix $(buildir),$(addsuffix .a,$(addprefix lib,$(subst /,,$(subst $(buildir),,$(DIRS))))))
 else
@@ -115,7 +118,7 @@ debug:
 	@echo -e "\e[35mLibdepconf Files  \e[0m: $(LIBCONFS)"
 	@echo -e "\e[35mBuild Files       \e[0m: $(LIBS)"
 	@echo    "#-------------------------------------------#"
-	@echo -e "\e[35mSource Files     \e[0m: $(SRCS)"
+	@echo -e "\e[35mSource Files     \e[0m: $(SRCS) $(MAIN_SRCS)"
 	@echo -e "\e[35mMake Files       \e[0m: $(MKS)"
 	@echo -e "\e[35mObject Files     \e[0m: $(OBJS)"
 .PHONY:debug
@@ -169,8 +172,8 @@ export override INSTALLMODE = true
 $(buildir)$(prog_name) : $(LIBS) installmode
 else
 export override INSTALLMODE =
-$(buildir)$(prog_name): INSTALLSTAMP_TMP = $(buildir)$(INSTALLSTAMP)
-$(buildir)$(prog_name): $(LIBS) $(buildir)$(INSTALLSTAMP)
+$(buildir)$(prog_name): INSTALLSTAMP_TMP = $(buildir)$(INSTALLSTAMP) $(addsuffix $(TIMESTAMP),$(DIRS))
+$(buildir)$(prog_name): $(LIBS) $(buildir)$(INSTALLSTAMP) $(MAIN_SRCS)
 endif
 	$(MAKE) -e -f Makefile2 $(patsubst INSTALLSTAMP=%,,$(MAKEFLAGS)) INSTALLSTAMP="$(INSTALLSTAMP_TMP)"
 
