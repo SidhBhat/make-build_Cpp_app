@@ -38,23 +38,20 @@ prog_name = main
 #===================================================
 CXX1SRCS  = $(wildcard $(srcdir)*.cpp)
 CXX2SRCS  = $(wildcard $(srcdir)*.cxx)
-SRCS   = $(CXX1SRCS) $(CXX2SRCS)
-OBJS   = $(patsubst $(srcdir)%.cpp,$(buildir)%.cpp.o,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%.cxx.o,$(CXX2SRCS))
-MKS    = $(patsubst $(srcdir)%.cpp,$(buildir)%cpp.mk,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%cxx.mk,$(CXX2SRCS))
+CXX3SRCS  = $(wildcard $(srcdir)*.cc)
+SRCS   = $(CXX1SRCS) $(CXX2SRCS) $(CXX3SRCS)
+OBJS   = $(patsubst $(srcdir)%.cpp,$(buildir)%.cpp.o,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%.cxx.o,$(CXX2SRCS)) $(patsubst $(srcdir)%.cc,$(buildir)%.cc.o,$(CXX3SRCS))
+MKS    = $(patsubst $(srcdir)%.cpp,$(buildir)%cpp.mk,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%cxx.mk,$(CXX2SRCS)) $(patsubst $(srcdir)%.cc,$(buildir)%cc.mk,$(CXX3SRCS))
 #=====================================================
 
 build: $(buildir)$(prog_name)
 .PHONY: build
 
 debug:
-	@echo -e "\e[35mBuild Directories \e[0m: $(DIRS)"
-	@echo -e "\e[35mSource Directories\e[0m: $(SRCDIRS)"
-	@echo -e "\e[35mLibdepconf Files  \e[0m: $(LIBCONFS)"
-	@echo -e "\e[35mBuild Files       \e[0m: $(LIBS)"
-	@echo    "#-------------------------------------------#"
 	@echo -e "\e[35mSource Files     \e[0m: $(SRCS)"
 	@echo -e "\e[35mMake Files       \e[0m: $(MKS)"
 	@echo -e "\e[35mObject Files     \e[0m: $(OBJS)"
+	@echo    "#-------------------------------------------#"
 	@echo -e "\e[35mmakeflages;makegoals\e[0m:$(MAKEFLAGS) ; $(MAKECMDGOALS)"
 .PHONY:debug
 
@@ -66,7 +63,7 @@ installmode:
 ifdef INSTALLMODE
 $(buildir)$(prog_name): $(OBJS) installmode
 else
-$(buildir)$(prog_name): $(OBJS) $(INSTALLSTAMP)
+$(buildir)$(prog_name): $(OBJS) $(COMPILESTAMP)
 endif
 ifndef SHARED
 	$(CXX) $(CXXFLAGS) -o $@ $(INCLUDES) $(OBJS) $(CXXLIBS)
@@ -89,6 +86,15 @@ ifndef SHARED
 	@$(CC) -M $< -MQ $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$(CXX) $(CXXFLAGS) -c -o $(buildir)$*.cxx.o $<\n")}' > $@
 else
 	@$(CC) -M $< -MQ $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$(CXX) $(filter-out -Fpie -fpie -pie -pic -fpic -Fpic,$(CXXFLAGS)) -c -o $(buildir)$*.cxx.o $<\n")}' > $@
+endif
+	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
+
+$(buildir)%cc.mk : $(srcdir)%.cc
+	@mkdir -p $(@D)
+ifndef SHARED
+	@$(CC) -M $< -MQ $(buildir)$*.cc.o | awk '{ print $$0 } END { printf("\t$(CXX) $(CXXFLAGS) -c -o $(buildir)$*.cc.o $<\n")}' > $@
+else
+	@$(CC) -M $< -MQ $(buildir)$*.cc.o | awk '{ print $$0 } END { printf("\t$(CXX) $(filter-out -Fpie -fpie -pie -pic -fpic -Fpic,$(CXXFLAGS)) -c -o $(buildir)$*.cc.o $<\n")}' > $@
 endif
 	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
 
