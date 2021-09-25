@@ -12,6 +12,9 @@ SHELL = /bin/bash
 
 # set this variable to any value to make shared libraries (cleaning existing build files may be necessary)
 SHARED =
+ifdef SHARED
+override SHARED = true
+endif
 
 #===================================================
 # Compile commands
@@ -19,12 +22,24 @@ SHARED =
 CXX        = g++
 CXXLIBS    =
 CXXFLAGS   = -g -O -Wall
-ifdef SHARED
-CXXFLAGS  += -fpic -fpie
-endif
-INCLUDES =
+INCLUDES   =
 ifdef SHARED
 RPATH    =
+endif
+#===================================================
+# set cxxflags and cxxflags_exec
+ifdef SHARED
+ifneq ($(strip $(filter -pie,$(CXXFLAGS))),)
+$(error -pie is for executable only do mot specify it for CXXFLAGS)
+endif
+override cxxflags      := $(filter-out -pic -fpic -Fpic -FPIC -fPIC,$(CXXFLAGS))
+ifeq ($(strip $(filter -fpie -Fpie -FPIE -fPIE,$(cxxflags))),)
+override cxxflags      += -fpie
+endif
+override cxxflags_exec := $(cxxflags) -pie
+else
+override cxxflags      := $(filter-out -pic -fpic -Fpic -FPIC -fPIC -pie -fpie -Fpie -FPIE -fpie,$(CXXFLAGS))
+override cxxflags_exec := $(cxxflags)
 endif
 #===================================================
 # Build Directories
@@ -32,78 +47,78 @@ endif
 srcdir     = src/
 buildir    = build/
 #===================================================
-prog_name = main
+prog_name = maincxx
 #===================================================
 # Source and target objects
 #===================================================
-CXX1SRCS  = $(wildcard $(srcdir)*.cpp)
-CXX2SRCS  = $(wildcard $(srcdir)*.cxx)
-CXX3SRCS  = $(wildcard $(srcdir)*.cc)
-SRCS   = $(CXX1SRCS) $(CXX2SRCS) $(CXX3SRCS)
-OBJS   = $(patsubst $(srcdir)%.cpp,$(buildir)%.cpp.o,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%.cxx.o,$(CXX2SRCS)) $(patsubst $(srcdir)%.cc,$(buildir)%.cc.o,$(CXX3SRCS))
-MKS    = $(patsubst $(srcdir)%.cpp,$(buildir)%cpp.mk,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%cxx.mk,$(CXX2SRCS)) $(patsubst $(srcdir)%.cc,$(buildir)%cc.mk,$(CXX3SRCS))
+override CXX1SRCS  = $(wildcard $(srcdir)*.cpp)
+override CXX2SRCS  = $(wildcard $(srcdir)*.cxx)
+override CXX3SRCS  = $(wildcard $(srcdir)*.cc)
+override SRCS   = $(CXX1SRCS) $(CXX2SRCS) $(CXX3SRCS)
+override OBJS   = $(patsubst $(srcdir)%.cpp,$(buildir)%.cpp.o,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%.cxx.o,$(CXX2SRCS)) $(patsubst $(srcdir)%.cc,$(buildir)%.cc.o,$(CXX3SRCS))
+override MKS    = $(patsubst $(srcdir)%.cpp,$(buildir)%cpp.mk,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%cxx.mk,$(CXX2SRCS)) $(patsubst $(srcdir)%.cc,$(buildir)%cc.mk,$(CXX3SRCS))
 #=====================================================
 
 build: $(buildir)$(prog_name)
 .PHONY: build
 
 debug:
+	@echo    "#-------------------------------------------#"
 	@echo -e "\e[35mSource Files     \e[0m: $(SRCS)"
 	@echo -e "\e[35mMake Files       \e[0m: $(MKS)"
 	@echo -e "\e[35mObject Files     \e[0m: $(OBJS)"
-	@echo    "#-------------------------------------------#"
-	@echo -e "\e[35mmakeflages;makegoals\e[0m:$(MAKEFLAGS) ; $(MAKECMDGOALS)"
+	@echo -e "\e[35mSHARED     \e[0m: $(SHARED)"
+	@echo -e "\e[35mCMD Goals  \e[0m: $(MAKECMDGOALS)"
+	@echo -e "\e[35mMakeflags  \e[0m: $(MAKEFLAGS)"
+	@echo -e "\e[35mClibs      \e[0m: $(CXXLIBS)"
+	@echo -e "\e[35mCFLAGS     \e[0m: $(CXXFLAGS)"
+	@echo -e "\e[35mComputed cflags     \e[0m: $(cxxflags)"
+	@echo -e "\e[35mComputed cflags_exec\e[0m: $(cxxflags_exec)"
+	@echo -e "\e[35mClibs      \e[0m: $(CXXLIBS)"
+	@echo -e "\e[35mTest Var   \e[0m: $(prog_name)"
 .PHONY:debug
 
-installmode:
-.PHONY:installmode
+empty: ;
+.PHONY:empty
 
 #=====================================================
-
 ifdef INSTALLMODE
-$(buildir)$(prog_name): $(OBJS) installmode
+$(buildir)$(prog_name): $(OBJS) empty
 else
+# if any file in COMPILESTAMP is changed they will cause a recompile
 $(buildir)$(prog_name): $(OBJS) $(COMPILESTAMP)
 endif
-ifndef SHARED
-	$(CXX) $(CXXFLAGS) -o $@ $(INCLUDES) $(OBJS) $(CXXLIBS)
+ifdef SHARED
+	$(CXX) $(cxxflags_exec) -o $@ $(INCLUDES) -Wl,-rpath="$(RPATH)" $(OBJS) $(CXXLIBS)
 else
-	$(CXX) $(filter-out -pic -fpic -Fpic,$(CXXFLAGS)) -o $@ $(INCLUDES) -Wl,-rpath="$(RPATH)" $(OBJS) $(CXXLIBS)
+	$(CXX) $(cxxflags_exec) -o $@ $(INCLUDES) $(OBJS) $(CXXLIBS)
 endif
 
+# rule to create cpp build make files
 $(buildir)%cpp.mk : $(srcdir)%.cpp
 	@mkdir -p $(@D)
-ifndef SHARED
-	@$(CC) -M $< -MQ $(buildir)$*.cpp.o | awk '{ print $$0 } END { printf("\t$(CXX) $(CXXFLAGS) -c -o $(buildir)$*.cpp.o $<\n")}' > $@
-else
-	@$(CC) -M $< -MQ $(buildir)$*.cpp.o | awk '{ print $$0 } END { printf("\t$(CXX) $(filter-out -Fpie -fpie -pie -pic -fpic -Fpic,$(CXXFLAGS)) -c -o $(buildir)$*.cpp.o $<\n")}' > $@
-endif
+	@$(CXX) -M $< -MT $(buildir)$*.cpp.o | awk '{ print $$0 } END { printf("\t$$(CXX) $$(cxxflags) -c -o $$@ $$<")}' > $@
 	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
 
+# rule to create cxx build make files
 $(buildir)%cxx.mk : $(srcdir)%.cxx
 	@mkdir -p $(@D)
-ifndef SHARED
-	@$(CC) -M $< -MQ $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$(CXX) $(CXXFLAGS) -c -o $(buildir)$*.cxx.o $<\n")}' > $@
-else
-	@$(CC) -M $< -MQ $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$(CXX) $(filter-out -Fpie -fpie -pie -pic -fpic -Fpic,$(CXXFLAGS)) -c -o $(buildir)$*.cxx.o $<\n")}' > $@
-endif
+	@$(CXX) -M $< -MT $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$$(CXX) $$(cxxflags) -c -o $$@ $$<")}' > $@
 	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
 
+# rule to create cc build make files
 $(buildir)%cc.mk : $(srcdir)%.cc
 	@mkdir -p $(@D)
-ifndef SHARED
-	@$(CC) -M $< -MQ $(buildir)$*.cc.o | awk '{ print $$0 } END { printf("\t$(CXX) $(CXXFLAGS) -c -o $(buildir)$*.cc.o $<\n")}' > $@
-else
-	@$(CC) -M $< -MQ $(buildir)$*.cc.o | awk '{ print $$0 } END { printf("\t$(CXX) $(filter-out -Fpie -fpie -pie -pic -fpic -Fpic,$(CXXFLAGS)) -c -o $(buildir)$*.cc.o $<\n")}' > $@
-endif
+	@$(CXX) -M $< -MT $(buildir)$*.cc.o | awk '{ print $$0 } END { printf("\t$$(CXX) $$(cxxflags) -c -o $$@ $$<")}' > $@
 	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
 
 ifneq ($(strip $(filter build $(buildir)$(prog_name) $(OBJS),$(MAKECMDGOALS))),)
 include $(MKS)
-else ifeq ($(MAKECMDGOALS),)
+else
+ifeq ($(MAKECMDGOALS),)
 include $(MKS)
 endif
-
+endif
 #=====================================================
 
 clean:

@@ -3,7 +3,7 @@
 
 void PrintData(char *str)
 {
-	long double ld;
+	extern long double ld;
 
 	printf("Character string\t\t: \"%s\"\n", str);
 	printf("Floating point value\t\t= %0.20Lg\n",ld = btof(str, DEC));
