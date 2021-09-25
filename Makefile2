@@ -38,9 +38,10 @@ prog_name = main
 #===================================================
 CXX1SRCS  = $(wildcard $(srcdir)*.cpp)
 CXX2SRCS  = $(wildcard $(srcdir)*.cxx)
-SRCS   = $(CXX1SRCS) $(CXX2SRCS)
-OBJS   = $(patsubst $(srcdir)%.cpp,$(buildir)%.cpp.o,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%.cxx.o,$(CXX2SRCS))
-MKS    = $(patsubst $(srcdir)%.cpp,$(buildir)%cpp.mk,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%cxx.mk,$(CXX2SRCS))
+CXX3SRCS  = $(wildcard $(srcdir)*.cc)
+SRCS   = $(CXX1SRCS) $(CXX2SRCS) $(CXX3SRCS)
+OBJS   = $(patsubst $(srcdir)%.cpp,$(buildir)%.cpp.o,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%.cxx.o,$(CXX2SRCS)) $(patsubst $(srcdir)%.cc,$(buildir)%.cc.o,$(CXX3SRCS))
+MKS    = $(patsubst $(srcdir)%.cpp,$(buildir)%cpp.mk,$(CXX1SRCS)) $(patsubst $(srcdir)%.cxx,$(buildir)%cxx.mk,$(CXX2SRCS)) $(patsubst $(srcdir)%.cc,$(buildir)%cc.mk,$(CXX3SRCS))
 #=====================================================
 
 build: $(buildir)$(prog_name)
@@ -66,7 +67,7 @@ installmode:
 ifdef INSTALLMODE
 $(buildir)$(prog_name): $(OBJS) installmode
 else
-$(buildir)$(prog_name): $(OBJS) $(INSTALLSTAMP)
+$(buildir)$(prog_name): $(OBJS) $(COMPILESTAMP)
 endif
 ifndef SHARED
 	$(CXX) $(CXXFLAGS) -o $@ $(INCLUDES) $(OBJS) $(CXXLIBS)
@@ -89,6 +90,15 @@ ifndef SHARED
 	@$(CC) -M $< -MQ $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$(CXX) $(CXXFLAGS) -c -o $(buildir)$*.cxx.o $<\n")}' > $@
 else
 	@$(CC) -M $< -MQ $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$(CXX) $(filter-out -Fpie -fpie -pie -pic -fpic -Fpic,$(CXXFLAGS)) -c -o $(buildir)$*.cxx.o $<\n")}' > $@
+endif
+	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
+
+$(buildir)%cc.mk : $(srcdir)%.cc
+	@mkdir -p $(@D)
+ifndef SHARED
+	@$(CC) -M $< -MQ $(buildir)$*.cc.o | awk '{ print $$0 } END { printf("\t$(CXX) $(CXXFLAGS) -c -o $(buildir)$*.cc.o $<\n")}' > $@
+else
+	@$(CC) -M $< -MQ $(buildir)$*.cc.o | awk '{ print $$0 } END { printf("\t$(CXX) $(filter-out -Fpie -fpie -pie -pic -fpic -Fpic,$(CXXFLAGS)) -c -o $(buildir)$*.cc.o $<\n")}' > $@
 endif
 	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
 
