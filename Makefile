@@ -130,7 +130,7 @@ export SHARED
 build: $(buildir)$(prog_name)
 .PHONY:build
 
-.DEFUALT_GOAL:build
+.DEFAULT_GOAL:build
 
 install: install-bin install-libs
 .PHONY:install
