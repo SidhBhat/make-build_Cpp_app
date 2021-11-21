@@ -44,7 +44,7 @@ override cxxflags_shared     := $(filter-out -fpie -Fpie -FPIE -fPIE,$(CXXFLAGS)
 ifeq ($(strip $(filter -fpic -Fpic -FPIC -fPIC,$(cxxflags_shared))),)
 override cxxflags_shared     += -fpic
 endif
-override cxxflags_shared_lib := $(cflags_shared) --shared
+override cxxflags_shared_lib := $(cxxflags_shared) --shared
 #======================================================
 # Build Directories
 #======================================================
