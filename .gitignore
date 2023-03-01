@@ -4,5 +4,3 @@
 *.out
 #build directory
 build/
-#subdirectories of subdirectories of source
-/src/
