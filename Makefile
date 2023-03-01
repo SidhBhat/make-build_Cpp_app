@@ -44,7 +44,7 @@ override cxxflags_shared     := $(filter-out -fpie -Fpie -FPIE -fPIE,$(CXXFLAGS)
 ifeq ($(strip $(filter -fpic -Fpic -FPIC -fPIC,$(cxxflags_shared))),)
 override cxxflags_shared     += -fpic
 endif
-override cxxflags_shared_lib := $(cxxflags_shared) --shared
+override cxxflags_shared_lib := $(cflags_shared) --shared
 #======================================================
 # Build Directories
 #======================================================
@@ -130,7 +130,7 @@ export SHARED
 build: $(buildir)$(prog_name)
 .PHONY:build
 
-.DEFAULT_GOAL:build
+.DEFUALT_GOAL:build
 
 install: install-bin install-libs
 .PHONY:install
@@ -354,7 +354,7 @@ clean-all:clean remove-config-files
 generate-config-files: generate-libdependancy-config-files generate-testlibconf-file
 .PHONY:generate-config-files
 
-generate-testlibconf-file: $(srcdir)$(MAINCONFIG)
+generate-testlibconf-file: $(GLOBALCONFS)
 .PHONY:generate-testlibconf-file
 
 generate-libdependancy-config-files: $(LIBCONFS)
@@ -365,7 +365,7 @@ $(GLOBALCONFS):
 	@echo -e "$(hash)!/usr/bin/make -f"\
 	"\n$(hash) Make config file for linker options, do not rename."\
 	"\n$(hash) The value of the variable must be LIBS_<libname>, where the libname is the stem of lib*.a, for it to be read by the makefile."\
-	"\noverride CXXLIBS += -L./$(buildir) $(addprefix -l,$(subst /,,$(subst $(buildir),,$(DIRS))))"\
+	"\noverride CXXLIBS += -L./$(buildir) $(addprefix -l,$(subst /,,$(subst $(buildir),,$(BUILD_DIRS))))"\
 	"\noverride INCLUDES +=" >  $@
 
 $(srcdir)%/$(libconfigfile):

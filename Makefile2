@@ -70,11 +70,11 @@ debug:
 	@echo -e "\e[35mSHARED     \e[0m: $(SHARED)"
 	@echo -e "\e[35mCMD Goals  \e[0m: $(MAKECMDGOALS)"
 	@echo -e "\e[35mMakeflags  \e[0m: $(MAKEFLAGS)"
-	@echo -e "\e[35mClibs      \e[0m: $(CLIBS)"
-	@echo -e "\e[35mCFLAGS     \e[0m: $(CFLAGS)"
-	@echo -e "\e[35mComputed cflags     \e[0m: $(cflags)"
-	@echo -e "\e[35mComputed cflags_exec\e[0m: $(cflags_exec)"
-	@echo -e "\e[35mClibs      \e[0m: $(CLIBS)"
+	@echo -e "\e[35mClibs      \e[0m: $(CXXLIBS)"
+	@echo -e "\e[35mCFLAGS     \e[0m: $(CXXFLAGS)"
+	@echo -e "\e[35mComputed cflags     \e[0m: $(cxxflags)"
+	@echo -e "\e[35mComputed cflags_exec\e[0m: $(cxxflags_exec)"
+	@echo -e "\e[35mClibs      \e[0m: $(CXXLIBS)"
 	@echo -e "\e[35mTest Var   \e[0m: $(prog_name)"
 .PHONY:debug
 
@@ -105,7 +105,7 @@ $(buildir)%cxx.mk : $(srcdir)%.cxx
 	@mkdir -p $(@D)
 	@$(CXX) -M $< -MT $(buildir)$*.cxx.o | awk '{ print $$0 } END { printf("\t$$(CXX) $$(cxxflags) -c -o $$@ $$<")}' > $@
 	@echo -e "\e[32mCreating Makefile \"$@\"\e[0m..."
-	
+
 # rule to create cc build make files
 $(buildir)%cc.mk : $(srcdir)%.cc
 	@mkdir -p $(@D)
