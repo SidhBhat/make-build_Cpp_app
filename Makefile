@@ -70,9 +70,9 @@ override INSTALL_DATA     = $(INSTALL) -m 644
 #Other files
 #=======================================================
 override libconfigfile  = config.mk
-override mainconfig    = libconfig.mk
+override mainconfig     = libconfig.mk
 #updating of installstamp instucts to recompile the executable
-override installstamp  = installstamp.txt
+override installstamp   = installstamp.txt
 #=======================================================
 # DO NOT MODIFY VARIABLES!
 #====================================================
